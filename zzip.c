@@ -30,6 +30,9 @@ void free_tree(node *root)
 	free(root);
 }
 
+/**
+ * generate_codes - traverse huffman tree and generate codes
+ */
 void generate_codes(node *root, char *code, int depth, char codes[256][256])
 {
 	if (root->left == NULL && root->right == NULL) {
@@ -48,7 +51,9 @@ void generate_codes(node *root, char *code, int depth, char codes[256][256])
 		generate_codes(root->right, code, depth + 1, codes);
 	}
 }
-
+/**
+ * encode_file - outputs a frequency table and the compressed input file data to an ouput file
+ */
 void encode_file(FILE *in, char *filename, int *freq_tab, char codes[256][256],
 		 size_t input_length)
 {
@@ -117,17 +122,26 @@ void encode_file(FILE *in, char *filename, int *freq_tab, char codes[256][256],
 	free(outname);
 }
 
-void read_freq_tab(FILE *in, int freq_tab[256])
+/**
+ * read_freq_table - parse frequency table embedded in file
+ */
+void read_freq_table(FILE *in, int freq_tab[256])
 {
 	for (int i = 0; i < 256; i++) {
 		fread(&freq_tab[i], sizeof(int), 1, in);
 	}
 }
-// returns root of PQ
-void *construct_tree(int *freq_tab)
+
+/** 
+ * generate_huffman_tree - builds a huffman tree and returns root
+ *
+ * @return root element of huffman tree 
+ */
+void *generate_huffman_tree(int *freq_tab)
 {
 	pq *pq = pq_init(cmp, 256);
 
+	// add frequencies to priority queue
 	for (int i = 0; i < 256; i++) {
 		if (freq_tab[i] != 0) {
 			node *n = malloc(sizeof *n);
@@ -138,6 +152,7 @@ void *construct_tree(int *freq_tab)
 		}
 	}
 
+	// collapse into huffman tree
 	while (pq->size > 1) {
 		node *left = pq_pop(pq);
 		node *right = pq_pop(pq);
@@ -149,6 +164,7 @@ void *construct_tree(int *freq_tab)
 		pq_push(pq, combo);
 	}
 
+	// return root
 	return pq_pop(pq);
 }
 
@@ -182,8 +198,8 @@ int main(int argc, char **argv)
 	node *root;
 
 	if (decode_flag) {
-		read_freq_tab(in, freq_tab);
-		root = construct_tree(freq_tab);
+		read_freq_table(in, freq_tab);
+		root = generate_huffman_tree(freq_tab);
 		unsigned char bit_buffer = 0;
 		node *current = root;
 
@@ -214,7 +230,7 @@ int main(int argc, char **argv)
 				freq_tab[(unsigned char)buffer[i]]++;
 			}
 		}
-		root = construct_tree(freq_tab);
+		root = generate_huffman_tree(freq_tab);
 		generate_codes(root, code, 0, codes);
 		encode_file(in, filename, freq_tab, codes, input_length);
 	}
